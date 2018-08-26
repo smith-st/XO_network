@@ -8,7 +8,6 @@ namespace XO.NetworkMsg{
 		abstract public short id {get;}
 	}
 
-
 	public class StartGameMsg : BaseXOMsg {
 		override public short id  {get{
 			return MsgType.Highest + 1;

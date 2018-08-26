@@ -7,7 +7,9 @@ namespace XO.Controllers{
 	public class BaseController : MonoBehaviour {
 		protected int port = 77777;
 		protected int connectionId = -1;
-		
+		/// <summary>
+		/// тип игры
+		/// </summary>
 		protected enum PlayerType{
 			SERVER,
 			CLIENT
@@ -28,7 +30,7 @@ namespace XO.Controllers{
 			
 		}
 
-		virtual public void StopGame (StopGameParam param) {
+		virtual protected void StopGame (StopGameParam param) {
 
 		}
 	}

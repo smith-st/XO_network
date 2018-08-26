@@ -21,6 +21,9 @@ namespace XO.Controllers{
 		Cell[] _allCells;
 
 		#region STRUCT
+		/// <summary>
+		/// Проверяет является ли заданая лини выиграшной
+		/// </summary>
 		struct LineChecker {
 			List<int> _line;
 			Cell [] _cells;
@@ -55,10 +58,13 @@ namespace XO.Controllers{
 				_cells = cells;
 			}
 
+			/// <summary>
+			/// новая ячейка
+			/// </summary>
+			/// <param name="index">Index.</param>
 			public void AddCell(int index){
 				_line.Add (index);
 			}
-
 
 			public void Reset(){
 				if (_line.Count > 0) {
@@ -99,7 +105,9 @@ namespace XO.Controllers{
 			GameEvent.OnClickOnCell += GameEvent_OnClickOnCell;
 			InitGame ();
 		}
-
+		/// <summary>
+		/// инициализация начальный парметров
+		/// </summary>
 		public override void InitGame (){
 			base.InitGame ();
 			CancelInvoke("CheckClientConnection");
@@ -118,7 +126,7 @@ namespace XO.Controllers{
 		}
 
 		/// <summary>
-		/// роверяем на заполнение вертикальных и горизонтальных линий
+		/// проверяем на заполнение вертикальных и горизонтальных линий
 		/// проверка сделана таким образом, что может проверять сетку лубой размерности
 		/// </summary>
 		/// <returns><c>true</c> если есть победитель, <c>false</c> нету</returns>
@@ -151,7 +159,7 @@ namespace XO.Controllers{
 			}
 			else {
 				lc.Reset ();
-				//проверяем диагональные линии
+				//проверяем диагональные линии (слева на право)
 				for (i = 0; i < _grid; i++)
 					lc.AddCell (_grid * i + i);
 				if (lc.isWinLine) {
@@ -170,7 +178,10 @@ namespace XO.Controllers{
 			}
 			return f;
 		}
-
+		/// <summary>
+		/// проверка на ничью
+		/// </summary>
+		/// <returns><c>true</c>, if for draw was checked, <c>false</c> otherwise.</returns>
 		bool CheckForDraw(){
 			bool f = true;
 			for (int i = 0; i < _allCells.Length; i++) {
@@ -181,7 +192,9 @@ namespace XO.Controllers{
 			}
 			return f;
 		}
-
+		/// <summary>
+		/// игра закончилась ничьей
+		/// </summary>
 		void DrawGame(){
 			StopGameMsg m = new StopGameMsg ();
 			StopGameParam p = new StopGameParam ();
@@ -194,7 +207,10 @@ namespace XO.Controllers{
 			SendMsgToClient (m);
 			Invoke ("StartGame", 3f);
 		}
-
+		/// <summary>
+		/// кто-то выиграл игру
+		/// </summary>
+		/// <param name="line">Line.</param>
 		void WinGame(List<int> line){
 			StopGameMsg m = new StopGameMsg ();
 			StopGameParam p = new StopGameParam ();
@@ -218,7 +234,10 @@ namespace XO.Controllers{
 			SendMsgToClient (m);
 			Invoke ("StartGame", 3f);
 		}
-
+		/// <summary>
+		/// когда нажали на ячейку
+		/// </summary>
+		/// <param name="cell">Cell.</param>
 		void GameEvent_OnClickOnCell (Cell cell){
 			if (_myTurn && _playGame) {
 				_myTurn = false;
@@ -237,17 +256,27 @@ namespace XO.Controllers{
 			}
 		}
 
+		/// <summary>
+		/// перезагружка сделана что бы этот метод можно было вызвать через Invoke
+		/// </summary>
 		protected void StartGame(){
 			StartGame (false);
 		}
 
+		/// <summary>
+		/// Начало игры
+		/// </summary>
+		/// <param name="myTurn">сервер не обращает внимания на этот параметр, так как он решает кто первым делает ход. А клиенту этот параметр указывает его ход или сервера.</param>
 		override protected void StartGame(bool myTurn = false){
 			_playGame = true;
+			//обнуляем ячейки
 			for (int i = 0; i < _allCells.Length; i++) {
 				_allCells [i].Reset ();
 			}
+
 			if (playerType == PlayerType.SERVER) {
 				StartGameMsg m = new StartGameMsg ();
+				//решаем кто ходит случайным образом
 				if (Random.Range (0, 2) == 1) {
 					//первый ход сервера, играет крестиками
 					_myTurn = true;
@@ -267,8 +296,11 @@ namespace XO.Controllers{
 					ShowMsg ("Ход соперника");
 			}
 		}
-
-		public override void StopGame (StopGameParam p){
+		/// <summary>
+		/// игра окончена
+		/// </summary>
+		/// <param name="p">параметры </param>
+		protected override void StopGame (StopGameParam p){
 			base.StopGame (p);
 			_playGame = false;
 			if (p.draw) 
@@ -284,9 +316,14 @@ namespace XO.Controllers{
 			CountLevel (p.totalPlay);
 			CountX (p.totalX);
 			CountO (p.totalO);
-
 		}
 
+		/// <summary>
+		/// новый ход
+		/// </summary>
+		/// <param name="myTurn"><c>true</c>  - мой ход</param>
+		/// <param name="capturedCell">захваченная ячейка соперником, надо отобразить на своем поле</param>
+		/// <param name="graphic">Символ соперника</param>
 		protected override void NewTurn (bool myTurn, int capturedCell, CellSymbol graphic){
 			base.NewTurn (myTurn, capturedCell,graphic);
 			_myTurn = myTurn;
@@ -301,18 +338,10 @@ namespace XO.Controllers{
 				                select c
 				            ).Single<Cell> ();
 				cell.ShowXO (graphic);
+				///если ход сделал клиент, тогда на стороне сервера проверяем условия выиграша
 				if (playerType == PlayerType.SERVER)
 					ChekForWinner ();
 			}
 		}
-
-		void NewLevel(){
-			
-		}
-
-	
-	
-
 	}
 }
-	

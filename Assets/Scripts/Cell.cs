@@ -31,12 +31,17 @@ namespace XO{
 			_sr = GetComponent<SpriteRenderer>();
 			Highlight (false);
 		}
-
+		/// <summary>
+		/// клик мышки по ячейке
+		/// </summary>
 		void OnMouseDown() {
 			if (!_isUsed)
 				GameEvent.ClickOnCell (this);
 		}
-
+		/// <summary>
+		/// отображает указанный символ
+		/// </summary>
+		/// <param name="symbol">символ</param>
 		public void ShowXO (CellSymbol symbol){
 			_sr.sprite = ( 
 				from g in allSymbols
@@ -46,14 +51,19 @@ namespace XO{
 			_isUsed = true;
 			_symbol = symbol;
 		}
-
+		/// <summary>
+		/// сброс в начальное состояние
+		/// </summary>
 		public void Reset(){
 			_isUsed = false;
 			_sr.sprite = null;
 			_symbol = CellSymbol.NONE;
 			Highlight (false);
 		}
-
+		/// <summary>
+		/// подсевтка ячейки
+		/// </summary>
+		/// <param name="show">If set to <c>true</c> show.</param>
 		public void Highlight(bool show){
 			if (_highlight)
 				_highlight.SetActive (show);

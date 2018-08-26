@@ -6,7 +6,11 @@ using XO.NetworkMsg;
 
 namespace XO.Controllers{
 	public class ServerController : UIController {
-	protected bool StartServer(){
+		/// <summary>
+		/// запускает сервер
+		/// </summary>
+		/// <returns><c>true</c>, запустился, <c>false</c> ошибка</returns>
+		protected bool StartServer(){
 			NetworkServer.Reset ();
 			playerType = PlayerType.SERVER;
 			bool status = NetworkServer.Listen(port);
@@ -19,7 +23,9 @@ namespace XO.Controllers{
 			}
 			return status;
 		}
-
+		/// <summary>
+		/// При подключении клиента
+		/// </summary>
 		void OnClientConnect (NetworkMessage msg){
 			if (connectionId == -1){
 				connectionId = msg.conn.connectionId;
@@ -29,12 +35,18 @@ namespace XO.Controllers{
 
 			}
 		}
-
+		/// <summary>
+		/// когда клиент сделал ход
+		/// </summary>
+		/// <param name="msg">Message.</param>
 		void OnClientTurn (NetworkMessage msg){
 			NewTurnMsg m = msg.reader.ReadMessage<NewTurnMsg> ();
 			NewTurn (m.myTurn, m.capturedCell,CellSymbol.O);
 		}
-
+		/// <summary>
+		/// отправляет сообщение клиенту
+		/// </summary>
+		/// <param name="msg">Message.</param>
 		protected void SendMsgToClient(BaseXOMsg msg){
 			NetworkServer.SendToClient (connectionId, msg.id, msg);
 		}
