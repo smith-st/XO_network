@@ -32,6 +32,10 @@ namespace XO.Controllers{
 				get{ return _isWinLine;}
 			}
 
+			public int lineLength {
+				get{ return _line.Count;}
+			}
+
 			public bool isWinLine{
 				get{
 					bool f = true;
@@ -79,7 +83,6 @@ namespace XO.Controllers{
 			_allCells = FindObjectsOfType<Cell> ();
 			//размер сетки
 			_grid = (int)Mathf.Sqrt((float)_allCells.Length);
-
 			//сортируем
 			Array.Sort(
 				_allCells, delegate(Cell a, Cell b) {
@@ -142,22 +145,21 @@ namespace XO.Controllers{
 			for (i = 0; i < _grid; i++) {
 				//горизонтальные 
 				lc.Reset ();
-				for (j = 1 + _grid * i; j <= _grid + _grid * i; j++)
-					lc.AddCell (j-1);
+				for (j = _grid * i; lc.lineLength < _grid; j++)
+					lc.AddCell (j);
 				if (lc.isWinLine)
 					break;
 				//вертикальные
 				lc.Reset ();
-				for (j = 1 + i; j <= _grid * 2 + 1 + i; j += _grid)
-					lc.AddCell (j-1);
+				for (j = i; lc.lineLength < _grid; j += _grid)
+					lc.AddCell (j);
 				if (lc.isWinLine)
 					break;
 			}
 			if (lc.hasWinLine) {
 				WinGame (lc.line);
 				f = true;
-			}
-			else {
+			}else {
 				lc.Reset ();
 				//проверяем диагональные линии (слева на право)
 				for (i = 0; i < _grid; i++)
@@ -168,7 +170,7 @@ namespace XO.Controllers{
 				}else {
 					lc.Reset ();
 					for (i = 0; i < _grid; i++)
-						lc.AddCell (2 + _grid * i - i);
+						lc.AddCell (_grid-1 + _grid * i - i);
 
 					if (lc.isWinLine) {
 						WinGame (lc.line);
