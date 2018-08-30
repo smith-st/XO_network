@@ -5,7 +5,7 @@ using UnityEngine.UI;
 
 namespace XO.Controllers{
 
-	public class UIController : BaseController {
+	public class UIController : MonoBehaviour {
 		[Header("UI")]
 		[SerializeField]
 		Text _txtMsg;
@@ -16,19 +16,19 @@ namespace XO.Controllers{
 		[SerializeField]
 		Text _txtLevel;
 
-		protected void ShowMsg(string txt){
+		public void ShowMsg(string txt){
 			_txtMsg.text = txt ; 
 		}
 
-		protected void CountX(int count){
+		public void CountX(int count){
 			_txtX.text = count.ToString (); ; 
 		}
 
-		protected void CountO(int count){
+		public void CountO(int count){
 			_txtO.text = count.ToString (); ; 
 		}
 
-		protected void CountLevel(int count){
+		public void CountLevel(int count){
 			_txtLevel.text = "Количество игр: " + count.ToString (); ; 
 		}
 

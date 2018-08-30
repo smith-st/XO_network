@@ -53,12 +53,14 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-     <Compile Include="Assets\Scripts\BaseController.cs" />
      <Compile Include="Assets\Scripts\Cell.cs" />
      <Compile Include="Assets\Scripts\ClientController.cs" />
      <Compile Include="Assets\Scripts\Enums.cs" />
+     <Compile Include="Assets\Scripts\Enums1.cs" />
+     <Compile Include="Assets\Scripts\Events\ClientEvent.cs" />
+     <Compile Include="Assets\Scripts\Events\GameEvent.cs" />
+     <Compile Include="Assets\Scripts\Events\ServerEvent.cs" />
      <Compile Include="Assets\Scripts\GameController.cs" />
-     <Compile Include="Assets\Scripts\GameEvent.cs" />
      <Compile Include="Assets\Scripts\ServerController.cs" />
      <Compile Include="Assets\Scripts\Struct.cs" />
      <Compile Include="Assets\Scripts\UIController.cs" />

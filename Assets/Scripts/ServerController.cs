@@ -3,36 +3,39 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Networking;
 using XO.NetworkMsg;
+using XO.Events;
 
 namespace XO.Controllers{
-	public class ServerController : UIController {
+	public class ServerController  {
+		int _connectionId = -1;
 		/// <summary>
 		/// запускает сервер
 		/// </summary>
 		/// <returns><c>true</c>, запустился, <c>false</c> ошибка</returns>
-		protected bool StartServer(){
-			NetworkServer.Reset ();
-			playerType = PlayerType.SERVER;
-			bool status = NetworkServer.Listen(port);
+		public bool Start(){
+			bool status = NetworkServer.Listen(Constants.PORT);
 			if (!status){
-				ShowMsg("Порт уже занят. Запускаем клиента ") ; 
+				NetworkServer.Reset ();
 			}else{
-				ShowMsg ("Игра запущена как СЕРВЕР");
 				NetworkServer.RegisterHandler(MsgType.Connect, OnClientConnect);
 				NetworkServer.RegisterHandler(new NewTurnMsg().id, OnClientTurn);
 			}
 			return status;
 		}
 		/// <summary>
+		////сброс
+		/// </summary>
+		public void Reset (){
+			NetworkServer.Reset ();
+		}
+
+		/// <summary>
 		/// При подключении клиента
 		/// </summary>
 		void OnClientConnect (NetworkMessage msg){
-			if (connectionId == -1){
-				connectionId = msg.conn.connectionId;
-				ShowMsg ("К игре подключился клиент: " + connectionId.ToString ());
-				StartGame();
-
-
+			if (_connectionId == -1){
+				_connectionId = msg.conn.connectionId;
+				ServerEvent.ClientConnected (msg);
 			}
 		}
 		/// <summary>
@@ -40,15 +43,16 @@ namespace XO.Controllers{
 		/// </summary>
 		/// <param name="msg">Message.</param>
 		void OnClientTurn (NetworkMessage msg){
-			NewTurnMsg m = msg.reader.ReadMessage<NewTurnMsg> ();
-			NewTurn (m.myTurn, m.capturedCell,CellSymbol.O);
+			ServerEvent.Turn (msg);
+
 		}
 		/// <summary>
 		/// отправляет сообщение клиенту
 		/// </summary>
 		/// <param name="msg">Message.</param>
-		protected void SendMsgToClient(BaseXOMsg msg){
-			NetworkServer.SendToClient (connectionId, msg.id, msg);
+		public void SendMsg(BaseXOMsg msg){
+			if (_connectionId != -1)
+				NetworkServer.SendToClient (_connectionId, msg.id, msg);
 		}
 		
 	}

@@ -15,10 +15,15 @@ namespace XO{
 			public CellSymbol symbol;
 		}
 
-		public int index = -1;
 		public List<CellSymbolAsset> allSymbols = new List<CellSymbolAsset>();
-		public bool isUsed{get{ return _isUsed; }}
 		public CellSymbol symbol{get{ return _symbol; }}
+		public int index {
+			get {return _index;	}
+			set {_index = value;}
+		}
+		public bool isUsed{
+			get{ return _isUsed; }
+		}
 
 
 		SpriteRenderer _sr;
@@ -26,8 +31,10 @@ namespace XO{
 		GameObject _highlight;
 		bool _isUsed = false;
 		CellSymbol _symbol = CellSymbol.NONE;
+		int _index = -1;
 
 		void Awake () {
+			/*comment*/
 			_sr = GetComponent<SpriteRenderer>();
 			Highlight (false);
 		}

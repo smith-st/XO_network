@@ -10,7 +10,19 @@ using XO.Events;
 using Random = UnityEngine.Random;
 
 namespace XO.Controllers{
-	public class GameController : ClientController {
+	public class GameController : MonoBehaviour {
+		public UIController _ui;
+		/// <summary>
+		/// тип игры
+		/// </summary>
+		enum PlayerType{
+			NONE,
+			SERVER,
+			CLIENT
+		}
+
+		PlayerType _playerType = PlayerType.NONE;
+
 		bool _myTurn = false;
 		bool _playGame = false;
 		int _grid;
@@ -19,6 +31,8 @@ namespace XO.Controllers{
 		int _countPlay;
 		//находм все ячейки
 		Cell[] _allCells;
+		ServerController _server;
+		ClientController _client;
 
 		#region STRUCT
 		/// <summary>
@@ -79,7 +93,7 @@ namespace XO.Controllers{
 			
 		}
 		#endregion
-		override protected void Start(){
+		void Start(){
 			_allCells = FindObjectsOfType<Cell> ();
 			//размер сетки
 			_grid = (int)Mathf.Sqrt((float)_allCells.Length);
@@ -111,22 +125,70 @@ namespace XO.Controllers{
 		/// <summary>
 		/// инициализация начальный парметров
 		/// </summary>
-		public override void InitGame (){
-			base.InitGame ();
-			CancelInvoke("CheckClientConnection");
+		public void InitGame (){
+
+			if (_playerType == PlayerType.SERVER) {
+				ServerEvent.OnClientConnected -= ServerEvent_OnClientConnected;
+				ServerEvent.OnTurn -= ServerEvent_OnTurn;
+				_server.Reset ();
+				_server = null;
+			} else if (_playerType == PlayerType.CLIENT){
+				ClientEvent.OnStartGame -= ClientEvent_OnStartGame;
+				ClientEvent.OnStopGame -= ClientEvent_OnStopGame;
+				ClientEvent.OnTurn -= ClientEvent_OnTurn;
+				_client.Reset ();
+				_client = null;
+			}
+			_playerType = PlayerType.NONE;
+
 			_countWin = _countLose = _countPlay = 0;
-			CountLevel (0);
-			CountX (0);
-			CountO (0);
+			_ui.CountLevel (0);
+			_ui.CountX (0);
+			_ui.CountO (0);
 			//стартуем сервер
-			if (!StartServer()){
+			_server = new ServerController();
+			if (_server.Start ()) {
+				_playerType = PlayerType.SERVER;
+				_ui.ShowMsg ("Игра запущена. Ожидание соперника");
+				ServerEvent.OnClientConnected += ServerEvent_OnClientConnected;
+				ServerEvent.OnTurn += ServerEvent_OnTurn;
+			} else {
+				_playerType = PlayerType.CLIENT;
+				_server = null;
 				//если сервер не удалось запустить, возможно он уже запущен
 				//стартуем клиента
-				NetworkServer.Reset();
-				StartClient();
-				Invoke("CheckClientConnection",1f);
+				_client = new ClientController();
+				_client.Start();
+				_ui.ShowMsg("Не найден соперник ") ; 
+				ClientEvent.OnStartGame += ClientEvent_OnStartGame;
+				ClientEvent.OnStopGame += ClientEvent_OnStopGame;
+				ClientEvent.OnTurn += ClientEvent_OnTurn;
 			}
 		}
+		void ClientEvent_OnStartGame (NetworkMessage msg){
+			StartGameMsg m = msg.reader.ReadMessage<StartGameMsg> ();
+			StartGame(m.myTurn);
+		}
+		void ClientEvent_OnStopGame (NetworkMessage msg){
+			StopGameMsg m = msg.reader.ReadMessage<StopGameMsg> ();
+			StopGame (m.param);
+		}
+		void ClientEvent_OnTurn (NetworkMessage msg){
+			NewTurnMsg m = msg.reader.ReadMessage<NewTurnMsg> ();
+			NewTurn (m.myTurn, m.capturedCell, CellSymbol.X);
+		}
+
+		void ServerEvent_OnClientConnected (NetworkMessage msg){
+			_ui.ShowMsg ("К игре подключился клиент");
+			StartGame ();
+		}
+
+		void ServerEvent_OnTurn (NetworkMessage msg){
+			NewTurnMsg m = msg.reader.ReadMessage<NewTurnMsg> ();
+			NewTurn (m.myTurn, m.capturedCell,CellSymbol.O);
+		}
+
+
 
 		/// <summary>
 		/// проверяем на заполнение вертикальных и горизонтальных линий
@@ -206,7 +268,7 @@ namespace XO.Controllers{
 			p.draw = true;
 			StopGame (p);
 			m.param = p;
-			SendMsgToClient (m);
+			_server.SendMsg(m);
 			Invoke ("StartGame", 3f);
 		}
 		/// <summary>
@@ -233,7 +295,7 @@ namespace XO.Controllers{
 			StopGame (p);
 			m.param = p;
 			m.param.win = !p.win;
-			SendMsgToClient (m);
+			_server.SendMsg (m);
 			Invoke ("StartGame", 3f);
 		}
 		/// <summary>
@@ -246,14 +308,14 @@ namespace XO.Controllers{
 				NewTurnMsg m = new NewTurnMsg ();
 				m.capturedCell = cell.index;
 				m.myTurn = !_myTurn;
-				ShowMsg ("Ход соперника");
-				if (playerType == PlayerType.SERVER) {
+				_ui.ShowMsg ("Ход соперника");
+				if (_playerType == PlayerType.SERVER) {
 					cell.ShowXO (CellSymbol.X);
-					SendMsgToClient (m);
+					_server.SendMsg (m);
 					ChekForWinner ();
 				} else {
 					cell.ShowXO (CellSymbol.O);
-					SendMsgToServer (m);
+					_client.SendMsg(m);
 				}
 			}
 		}
@@ -261,7 +323,7 @@ namespace XO.Controllers{
 		/// <summary>
 		/// перезагружка сделана что бы этот метод можно было вызвать через Invoke
 		/// </summary>
-		protected void StartGame(){
+		void StartGame(){
 			StartGame (false);
 		}
 
@@ -269,55 +331,54 @@ namespace XO.Controllers{
 		/// Начало игры
 		/// </summary>
 		/// <param name="myTurn">сервер не обращает внимания на этот параметр, так как он решает кто первым делает ход. А клиенту этот параметр указывает его ход или сервера.</param>
-		override protected void StartGame(bool myTurn = false){
+		void StartGame(bool myTurn = false){
 			_playGame = true;
 			//обнуляем ячейки
 			for (int i = 0; i < _allCells.Length; i++) {
 				_allCells [i].Reset ();
 			}
 
-			if (playerType == PlayerType.SERVER) {
+			if (_playerType == PlayerType.SERVER) {
 				StartGameMsg m = new StartGameMsg ();
 				//решаем кто ходит случайным образом
 				if (Random.Range (0, 2) == 1) {
 					//первый ход сервера, играет крестиками
 					_myTurn = true;
-					ShowMsg ("Ваш ход");
+					_ui.ShowMsg ("Ваш ход");
 				} else {
 					//первый ход клиента, играет ноликами
 					_myTurn = false;
-					ShowMsg ("Ход соперника");
+					_ui.ShowMsg ("Ход соперника");
 				}
 				m.myTurn = !_myTurn;
-				SendMsgToClient (m);
+				_server.SendMsg (m);
 			} else {
 				_myTurn = myTurn;
 				if (_myTurn) 
-					ShowMsg ("Ваш ход");
+					_ui.ShowMsg ("Ваш ход");
 				else
-					ShowMsg ("Ход соперника");
+					_ui.ShowMsg ("Ход соперника");
 			}
 		}
 		/// <summary>
 		/// игра окончена
 		/// </summary>
 		/// <param name="p">параметры </param>
-		protected override void StopGame (StopGameParam p){
-			base.StopGame (p);
+		void StopGame (StopGameParam p){
 			_playGame = false;
 			if (p.draw) 
-				ShowMsg ("Ничья");
+				_ui.ShowMsg ("Ничья");
 			else if (p.win) 
-				ShowMsg ("Вы выиграли");
+				_ui.ShowMsg ("Вы выиграли");
 			else 
-				ShowMsg ("Вы проиграли");
+				_ui.ShowMsg ("Вы проиграли");
 			if (p.line != null){
 				for (int i = 0; i < p.line.Length; i++) 
 					_allCells [p.line [i]].Highlight (true);
 			}
-			CountLevel (p.totalPlay);
-			CountX (p.totalX);
-			CountO (p.totalO);
+			_ui.CountLevel (p.totalPlay);
+			_ui.CountX (p.totalX);
+			_ui.CountO (p.totalO);
 		}
 
 		/// <summary>
@@ -326,13 +387,12 @@ namespace XO.Controllers{
 		/// <param name="myTurn"><c>true</c>  - мой ход</param>
 		/// <param name="capturedCell">захваченная ячейка соперником, надо отобразить на своем поле</param>
 		/// <param name="graphic">Символ соперника</param>
-		protected override void NewTurn (bool myTurn, int capturedCell, CellSymbol graphic){
-			base.NewTurn (myTurn, capturedCell,graphic);
+		void NewTurn (bool myTurn, int capturedCell, CellSymbol graphic){
 			_myTurn = myTurn;
 			if (_myTurn)
-				ShowMsg ("Ваш ход");
+				_ui.ShowMsg ("Ваш ход");
 			else
-				ShowMsg ("Ход соперника");
+				_ui.ShowMsg ("Ход соперника");
 			if (capturedCell != -1) {
 				Cell cell = (
 				                from c in _allCells
@@ -341,7 +401,7 @@ namespace XO.Controllers{
 				            ).Single<Cell> ();
 				cell.ShowXO (graphic);
 				///если ход сделал клиент, тогда на стороне сервера проверяем условия выиграша
-				if (playerType == PlayerType.SERVER)
+				if (_playerType == PlayerType.SERVER)
 					ChekForWinner ();
 			}
 		}
