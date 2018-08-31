@@ -1,9 +1,6 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
-using UnityEngine.Networking;
-using XO.NetworkMsg;
+﻿using UnityEngine.Networking;
 using XO.Events;
+using XO.NetworkMsg;
 
 namespace XO.Controllers{
 	
@@ -20,6 +17,9 @@ namespace XO.Controllers{
 			_nc.RegisterHandler(new NewTurnMsg().id, OnServerTurn);
 			_nc.RegisterHandler(new StopGameMsg().id, OnStopGame);
 			_nc.Connect("localhost",Constants.PORT);
+			Thread.Sleep (2000);
+			if (!_nc.isConnected)
+				Start ();
 		}
 
 

@@ -1,7 +1,4 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
-using UnityEngine.Networking;
+﻿using UnityEngine.Networking;
 
 namespace XO.NetworkMsg{
 	public abstract class BaseXOMsg : MessageBase {
@@ -15,7 +12,6 @@ namespace XO.NetworkMsg{
 		public bool myTurn;
 	}
 	public class NewTurnMsg : BaseXOMsg {
-		
 		override public short id  {get{
 			return MsgType.Highest + 2;
 		}}
